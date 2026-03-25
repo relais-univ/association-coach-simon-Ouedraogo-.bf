@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Association Coach Simon</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            background: #1a1a2e;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            width: 90%;
+            max-width: 500px;
+            text-align: center;
+        }
+        .logo {
+            width: 70px;
+            height: 70px;
+            background: #2c5e2e;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            font-size: 30px;
+            font-weight: bold;
+            color: #ffd700;
+        }
+        h2 {
+            color: #2c5e2e;
+            margin-bottom: 10px;
+        }
+        input {
+            width: 100%;
+            padding: 12px;
+            margin: 15px 0;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-size: 16px;
+        }
+        button {
+            background: #2c5e2e;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 10px;
+            font-size: 16px;
+            cursor: pointer;
+            width: 100%;
+        }
+        .error {
+            color: red;
+            margin-top: 10px;
+        }
+        .admin-area {
+            display: none;
+            width: 90%;
+            max-width: 800px;
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+        }
+        .section {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+        }
+        .section h3 {
+            color: #2c5e2e;
+            margin-bottom: 15px;
+        }
+        .section input, .section textarea {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+        }
+        .section textarea {
+            min-height: 80px;
+        }
+        .item {
+            background: white;
+            padding: 10px;
+            margin: 10px 0;
+            border-left: 4px solid #ffd700;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .delete-btn {
+            background: #dc3545;
+            width: auto;
+            padding: 5px 15px;
+        }
+        .badge {
+            background: #ffd700;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            display: inline-block;
+            margin-bottom: 15px;
+        }
+        .header-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .logout-btn {
+            background: #dc3545;
+            width: auto;
+            padding: 8px 20px;
+        }
+        .clear-btn {
+            background: #ff6b6b;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<!-- ÉCRAN DE CONNEXION -->
+<div id="loginScreen" class="container">
+    <div class="logo">CSO</div>
+    <h2>Administration</h2>
+    <p>Association Coach Simon Ouédraogo</p>
+    <input type="password" id="passwordInput" placeholder="Code d'accès">
+    <button onclick="verifierMotDePasse()">Se connecter</button>
+    <div id="messageErreur" class="error"></div>
+</div>
+
+<!-- ESPACE ADMIN (caché au début) -->
+<div id="adminScreen" class="admin-area">
+    <div class="header-bar">
+        <h2>⚙️ Administration</h2>
+        <button class="logout-btn" onclick="deconnexion()">Déconnexion</button>
+    </div>
+    
+    <!-- Gestion des comptes -->
+    <div class="section">
+        <h3>💰 Comptes d'accompagnement dépôt</h3>
+        <div class="badge" id="badgeComptes">Vide</div>
+        <input type="text" id="numCompte" placeholder="Numéro (8 chiffres) ex: 77076868">
+        <input type="text" id="nomCompte" placeholder="Nom du compte ex: Compte Principal">
+        <textarea id="descCompte" placeholder="Description (optionnel)"></textarea>
+        <button onclick="ajouterCompte()">+ Ajouter un compte</button>
+        <div id="listeComptes"></div>
+    </div>
+    
+    <!-- Gestion des projets -->
+    <div class="section">
+        <h3>📌 Projets en cours</h3>
+        <div class="badge" id="badgeProjets">Vide</div>
+        <input type="text" id="titreProjet" placeholder="Titre du projet">
+        <textarea id="descProjet" placeholder="Description du projet"></textarea>
+        <input type="text" id="objectifProjet" placeholder="Objectif (optionnel) ex: 2 500 000 FCFA">
+        <button onclick="ajouterProjet()">+ Publier un projet</button>
+        <div id="listeProjets"></div>
+    </div>
+    
+    <button class="clear-btn" onclick="toutEffacer()">🗑️ TOUT EFFACER</button>
+</div>
+
+<script>
+    // STOCKAGE
+    const STOCKAGE_COMPTES = 'asso_comptes';
+    const STOCKAGE_PROJETS = 'asso_projets';
+    const MOT_DE_PASSE = 'je remercie l\'univers';
+    
+    // FONCTIONS DE CONNEXION
+    function verifierMotDePasse() {
+        var mdp = document.getElementById('passwordInput').value;
+        if (mdp === MOT_DE_PASSE) {
+            sessionStorage.setItem('connecte', 'oui');
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('adminScreen').style.display = 'block';
+            chargerTout();
+        } else {
+            document.getElementById('messageErreur').innerHTML = 'Code d\'accès incorrect';
+        }
+    }
+    
+    function deconnexion() {
+        sessionStorage.removeItem('connecte');
+        document.getElementById('loginScreen').style.display = 'block';
+        document.getElementById('adminScreen').style.display = 'none';
+        document.getElementById('passwordInput').value = '';
+        document.getElementById('messageErreur').innerHTML = '';
+    }
+    
+    // CHARGEMENT
+    function chargerTout() {
+        afficherComptes();
+        afficherProjets();
+        mettreAJourBadges();
+    }
+    
+    // GESTION DES COMPTES
+    function getComptes() {
+        var data = localStorage.getItem(STOCKAGE_COMPTES);
+        if (data) {
+            return JSON.parse(data);
+        }
+        return [];
+    }
+    
+    function sauvegarderComptes(comptes) {
+        localStorage.setItem(STOCKAGE_COMPTES, JSON.stringify(comptes));
+        afficherComptes();
+        mettreAJourBadges();
+    }
+    
+    function ajouterCompte() {
+        var numero = document.getElementById('numCompte').value.trim();
+        var nom = document.getElementById('nomCompte').value.trim();
+        var description = document.getElementById('descCompte').value.trim();
+        
+        if (numero === '' || nom === '') {
+            alert('Veuillez remplir le numéro et le nom du compte');
+            return;
+        }
+        
+        var comptes = getComptes();
+        comptes.push({
+            id: Date.now(),
+            number: numero,
+            label: nom,
+            description: description,
+            active: true
+        });
+        sauvegarderComptes(comptes);
+        
+        document.getElementById('numCompte').value = '';
+        document.getElementById('nomCompte').value = '';
+        document.getElementById('descCompte').value = '';
+        alert('Compte ajouté avec succès !');
+    }
+    
+    function supprimerCompte(id) {
+        if (confirm('Supprimer ce compte ?')) {
+            var comptes = getComptes();
+            var nouveauxComptes = [];
+            for (var i = 0; i < comptes.length; i++) {
+                if (comptes[i].id !== id) {
+                    nouveauxComptes.push(comptes[i]);
+                }
+            }
+            sauvegarderComptes(nouveauxComptes);
+        }
+    }
+    
+    function afficherComptes() {
+        var comptes = getComptes();
+        var container = document.getElementById('listeComptes');
+        
+        if (comptes.length === 0) {
+            container.innerHTML = '<p style="color:#999; text-align:center; padding:10px;">Aucun compte</p>';
+            return;
+        }
+        
+        var html = '';
+        for (var i = 0; i < comptes.length; i++) {
+            var c = comptes[i];
+            var numFormate = c.number.slice(0,2) + '-' + c.number.slice(2,4) + '-' + c.number.slice(4,6) + '-' + c.number.slice(6,8);
+            html += '<div class="item">';
+            html += '<div><strong>📱 ' + numFormate + '</strong><br>' + c.label;
+            if (c.description) {
+                html += '<br><small>📌 ' + c.description + '</small>';
+            }
+            html += '</div>';
+            html += '<button class="delete-btn" onclick="supprimerCompte(' + c.id + ')">Supprimer</button>';
+            html += '</div>';
+        }
+        container.innerHTML = html;
+    }
+    
+    // GESTION DES PROJETS
+    function getProjets() {
+        var data = localStorage.getItem(STOCKAGE_PROJETS);
+        if (data) {
+            return JSON.parse(data);
+        }
+        return [];
+    }
+    
+    function sauvegarderProjets(projets) {
+        localStorage.setItem(STOCKAGE_PROJETS, JSON.stringify(projets));
+        afficherProjets();
+        mettreAJourBadges();
+    }
+    
+    function ajouterProjet() {
+        var titre = document.getElementById('titreProjet').value.trim();
+        var description = document.getElementById('descProjet').value.trim();
+        var objectif = document.getElementById('objectifProjet').value.trim();
+        
+        if (titre === '' || description === '') {
+            alert('Veuillez remplir le titre et la description');
+            return;
+        }
+        
+        var projets = getProjets();
+        var aujourdhui = new Date();
+        var dateStr = aujourdhui.getDate() + '/' + (aujourdhui.getMonth()+1) + '/' + aujourdhui.getFullYear();
+        
+        projets.unshift({
+            id: Date.now(),
+            title: titre,
+            description: description,
+            amount: objectif,
+            date: dateStr
+        });
+        sauvegarderProjets(projets);
+        
+        document.getElementById('titreProjet').value = '';
+        document.getElementById('descProjet').value = '';
+        document.getElementById('objectifProjet').value = '';
+        alert('Projet publié avec succès !');
+    }
+    
+    function supprimerProjet(id) {
+        if (confirm('Supprimer ce projet ?')) {
+            var projets = getProjets();
+            var nouveauxProjets = [];
+            for (var i = 0; i < projets.length; i++) {
+                if (projets[i].id !== id) {
+                    nouveauxProjets.push(projets[i]);
+                }
+            }
+            sauvegarderProjets(nouveauxProjets);
+        }
+    }
+    
+    function afficherProjets() {
+        var projets = getProjets();
+        var container = document.getElementById('listeProjets');
+        
+        if (projets.length === 0) {
+            container.innerHTML = '<p style="color:#999; text-align:center; padding:10px;">Aucun projet</p>';
+            return;
+        }
+        
+        var html = '';
+        for (var i = 0; i < projets.length; i++) {
+            var p = projets[i];
+            html += '<div class="item">';
+            html += '<div><strong>📌 ' + p.title + '</strong><br>' + p.description;
+            if (p.amount) {
+                html += '<br><strong>🎯 Objectif : ' + p.amount + '</strong>';
+            }
+            html += '<br><small>📅 ' + p.date + '</small>';
+            html += '</div>';
+            html += '<button class="delete-btn" onclick="supprimerProjet(' + p.id + ')">Supprimer</button>';
+            html += '</div>';
+        }
+        container.innerHTML = html;
+    }
+    
+    function mettreAJourBadges() {
+        var comptes = getComptes();
+        var projets = getProjets();
+        document.getElementById('badgeComptes').innerHTML = comptes.length === 0 ? '📌 Vide' : '📌 ' + comptes.length + ' compte(s)';
+        document.getElementById('badgeProjets').innerHTML = projets.length === 0 ? '📌 Vide' : '📌 ' + projets.length + ' projet(s)';
+    }
+    
+    function toutEffacer() {
+        if (confirm('⚠️ ATTENTION : Cette action supprime TOUS les projets et TOUS les comptes. Êtes-vous sûr ?')) {
+            localStorage.removeItem(STOCKAGE_COMPTES);
+            localStorage.removeItem(STOCKAGE_PROJETS);
+            chargerTout();
+            alert('✅ Toutes les données ont été effacées !');
+        }
+    }
+    
+    // Vérifier si déjà connecté
+    if (sessionStorage.getItem('connecte') === 'oui') {
+        document.getElementById('loginScreen').style.display = 'none';
+        document.getElementById('adminScreen').style.display = 'block';
+        chargerTout();
+    }
+</script>
+
+</body>
+</html>
